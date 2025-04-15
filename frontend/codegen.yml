@@ -1,0 +1,12 @@
+schema: http://prod-team-28-gr7l7i81.REDACTED:8000/api
+documents: "./src/**/*.graphql"
+generates:
+  src/generated/graphql.tsx:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typescript-react-apollo
+    config:
+      withHooks: true
+      withComponent: false
+      withHOC: false

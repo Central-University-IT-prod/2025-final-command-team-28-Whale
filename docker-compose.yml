@@ -1,0 +1,89 @@
+services:
+  postgres:
+    container_name: postgres-test
+    image: postgres:17.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "prod"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "super-secret-password"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d prod -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - "/home/ubuntu/pgdata:/var/lib/postgresql/data"
+    # ports:
+    #   - 5432:5432
+    networks:
+      - mentor_network
+
+  redis:
+    container_name: redis-test
+    image: redis:7.4.2
+    restart: unless-stopped
+    # ports:
+    #   - 6379:6379
+    networks:
+      - mentor_network
+      
+  minio:
+    container_name: minio-test
+    image: bitnami/minio:2025.2.7
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minio-root-user
+      MINIO_ROOT_PASSWORD: minio-root-password
+    # ports:
+    #   - 9000:9000
+    #   - 9001:9001
+    networks:
+      - mentor_network 
+
+  backend:
+    container_name: backend-test
+    build:
+      context: backend/
+      cache_from:
+      - cache-backend-image
+      # cache_to:
+      # - cache-backend-image
+      # - type=local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: 8000
+      DEBUG: "False"
+      APP_DOMAIN: ""
+      API_DOMAIN: ""
+      GQL_IDE: "graphiql"
+      PSQL_HOST: "postgres"
+      PSQL_PORT: "5432"
+      PSQL_USER: "postgres"
+      PSQL_PASSWORD: "super-secret-password"
+      PSQL_DBNAME: "prod"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PYTHONUNBUFFERED: 1 
+    # ports:
+    #   - 8001:8001
+    networks:
+      - mentor_network
+
+  frontend:
+    container_name: frontend-test
+    build: frontend/
+    restart: unless-stopped
+    ports:
+      - 80:80
+    networks:
+      - mentor_network
+
+networks:
+  mentor_network:
+    driver: bridge
